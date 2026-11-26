@@ -1,0 +1,87 @@
+---
+// 確かめる。答えはメモリだけに持ち、記録しない
+import type { Quiz } from '../lib/render';
+interface Props { quiz: Quiz[] }
+const { quiz } = Astro.props;
+---
+<div class="quiz" data-quiz>
+  <p class="score" data-score hidden></p>
+  {quiz.map((q) => (
+    <div class="q" data-q>
+      <div class="q-text"><span class="q-num">{q.label}</span><Fragment set:html={q.q} /></div>
+      {q.opts.map((o) => (
+        <button type="button" class="opt" data-ok={o.ok ? '1' : '0'}><span class="opt-body" set:html={o.html} /></button>
+      ))}
+      <div class="fb" data-fb hidden><Fragment set:html={q.why} /></div>
+    </div>
+  ))}
+  <button type="button" class="btn" data-retry hidden>もう一度解く</button>
+</div>
+
+<script>
+  for (const quiz of document.querySelectorAll<HTMLElement>('[data-quiz]')) {
+    const qs = [...quiz.querySelectorAll<HTMLElement>('[data-q]')];
+    const score = quiz.querySelector<HTMLElement>('[data-score]')!;
+    const retry = quiz.querySelector<HTMLButtonElement>('[data-retry]')!;
+    const why = new Map(qs.map((q) => [q, q.querySelector('[data-fb]')!.innerHTML]));
+    const answered = new Map<HTMLElement, boolean>();
+
+    const mark = (btn: HTMLElement, text: string) => {
+      const m = document.createElement('span');
+      m.className = 'mark';
+      m.textContent = text;
+      btn.append(m);
+    };
+    const update = () => {
+      retry.hidden = answered.size === 0;
+      score.hidden = answered.size < qs.length;
+      score.textContent = `${qs.length} 問中 ${[...answered.values()].filter(Boolean).length} 問正解`;
+    };
+
+    for (const q of qs) {
+      const opts = [...q.querySelectorAll<HTMLButtonElement>('.opt')];
+      const fb = q.querySelector<HTMLElement>('[data-fb]')!;
+      for (const opt of opts) {
+        opt.addEventListener('click', () => {
+          if (answered.has(q)) return;
+          const correct = opts.find((o) => o.dataset.ok === '1')!;
+          const ok = opt === correct;
+          answered.set(q, ok);
+          for (const o of opts) o.disabled = true;
+          correct.classList.add('opt-ok');
+          if (ok) mark(opt, 'あなたの答え・正しい');
+          else {
+            opt.classList.add('opt-ng');
+            mark(opt, 'あなたの答え');
+            mark(correct, '正しい答え');
+          }
+          const head = document.createElement('p');
+          head.className = 'fb-head';
+          // 正答の本文は数式を含むことがある。textContent だと KaTeX の MathML と TeX まで入るので、本文の節を写して並べる
+          if (ok) head.textContent = '正しい。';
+          else {
+            const body = correct.querySelector('.opt-body')!.cloneNode(true) as HTMLElement;
+            head.append('正しいのは「', ...body.childNodes, '」。');
+          }
+          fb.innerHTML = why.get(q)!;
+          fb.prepend(head);
+          fb.className = `fb ${ok ? 'fb-ok' : 'fb-ng'}`;
+          fb.hidden = false;
+          update();
+        });
+      }
+    }
+    retry.addEventListener('click', () => {
+      answered.clear();
+      for (const q of qs) {
+        for (const o of q.querySelectorAll<HTMLButtonElement>('.opt')) {
+          o.disabled = false;
+          o.classList.remove('opt-ok', 'opt-ng');
+          o.querySelectorAll('.mark').forEach((m) => m.remove());
+        }
+        q.querySelector<HTMLElement>('[data-fb]')!.hidden = true;
+      }
+      update();
+    });
+  }
+</script>

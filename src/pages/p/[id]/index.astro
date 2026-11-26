@@ -1,0 +1,9 @@
+---
+// /p/<記事ID>/ は 1 枚目へ
+import { loadSite, sheetHref } from '../../../lib/data';
+export async function getStaticPaths() {
+  const s = await loadSite();
+  return s.articles.map((a) => ({ params: { id: a.id } }));
+}
+return Astro.redirect(sheetHref(Astro.params.id, 1));
+---

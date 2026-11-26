@@ -1,0 +1,8 @@
+---
+// トップ = 地図。前回見た分類があれば、そこへ移る。初めては、記事を持つ最初の分類を開く
+import MapView from '../components/MapView.astro';
+import { loadSite } from '../lib/data';
+const s = await loadSite();
+const cat = s.categories.find((c) => s.items.some((i) => i.cat === c.id && i.pages.length > 0)) ?? s.categories[0];
+---
+<MapView field={cat.field} cat={cat.id} restore />

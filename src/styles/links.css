@@ -1,0 +1,25 @@
+/* どの画面にも出す上の行き先と、リンクの画面（#/links）。色は style.css の変数を使う */
+.topnav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; margin-bottom: -8px; }
+.topnav a { display: inline-flex; align-items: center; min-height: 36px; padding: 6px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--ink2); text-decoration: none; }
+.topnav a:hover { background: #ECEEF2; color: var(--ink); }
+.topnav a[aria-current="page"] { background: var(--blue-soft); color: var(--blue-dark); font-weight: 700; }
+
+.hub-head { display: flex; flex-direction: column; gap: 10px; }
+.hub-head h1 { font-size: 28px; }
+.hub-flow { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.hub-flow li { display: flex; align-items: center; gap: 8px; }
+.hub-flow li + li::before { content: "→"; }
+.hub-flow span { padding: 2px 10px; border-radius: 999px; background: var(--blue-soft); color: var(--blue-dark); }
+
+.hub-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .hub-groups { grid-template-columns: minmax(0, 1fr); } }
+.hub-sub { font-size: 14px; color: var(--muted); }
+.hub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.hub-list li + li { border-top: 1px solid var(--line2); }
+.hub-link { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; padding: 9px 6px; border-radius: 8px; color: var(--ink); text-decoration: none; }
+.hub-link:hover { background: #F1F3F6; color: var(--ink); }
+.hub-link:hover .hub-name { color: var(--blue-dark); text-decoration: underline; text-underline-offset: 3px; }
+.hub-link .mono { font-size: 12px; white-space: nowrap; }
+.hub-name { font-weight: 500; line-height: 1.5; }
+.hub-note { grid-column: 1 / -1; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.topnav a:focus-visible, .hub-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }

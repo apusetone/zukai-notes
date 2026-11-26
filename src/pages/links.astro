@@ -1,0 +1,39 @@
+---
+// リンクの画面
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { loadSite, mapHref, sheetHref } from '../lib/data';
+const s = await loadSite();
+const foundations = s.articles.filter((a) => a.id.endsWith('-00'));
+const deep = s.articles.filter((a) => !a.id.endsWith('-00'));
+const fieldName = (id: string) => s.field(id)?.name ?? '';
+---
+<StarlightPage frontmatter={{ title: 'リンク', template: 'splash', tableOfContents: false }}>
+  <div class="not-content zk">
+    <ol class="hub-flow" aria-label="使う順"><li><span>読む</span></li></ol>
+    <div class="hub-groups">
+      <section class="panel">
+        <div class="panel-head"><h2>読む</h2></div>
+        <ul class="hub-list">
+          <li><a class="hub-link" href="/"><span class="hub-name">地図</span><span class="mono">{s.items.length} 項目</span></a></li>
+          {s.fields.map((f) => (
+            <li><a class="hub-link" href={mapHref(f.id)}><span class="hub-name">分野: {f.name}</span><span class="mono">{f.id}</span></a></li>
+          ))}
+        </ul>
+        <h3 class="hub-sub">基礎の単元</h3>
+        {foundations.length === 0 && <p class="muted">まだ無い。</p>}
+        <ul class="hub-list">
+          {foundations.map((a) => (
+            <li><a class="hub-link" href={sheetHref(a.id, 1)}><span class="hub-name">{a.title}</span><span class="mono">{a.id}</span><span class="hub-note">{fieldName(a.field)} · {a.sheets.length} 枚</span></a></li>
+          ))}
+        </ul>
+        <h3 class="hub-sub">掘り下げの記事</h3>
+        {deep.length === 0 && <p class="muted">まだ無い。</p>}
+        <ul class="hub-list">
+          {deep.map((a) => (
+            <li><a class="hub-link" href={sheetHref(a.id, 1)}><span class="hub-name">{a.title}</span><span class="mono">{a.id}</span><span class="hub-note">{fieldName(a.field)} · {a.sheets.length} 枚</span></a></li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  </div>
+</StarlightPage>

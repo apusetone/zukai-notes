@@ -1,0 +1,158 @@
+---
+/**
+ * 地図。分野と分類ごとに静的なページを作り、ここで 1 つの分類を描く。
+ * JS で足すのは、絞り込みと、最後に見た分類の保存だけ。
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import MiniLinks from './MiniLinks.astro';
+import { loadSite, isNew, mapHref, sheetHref } from '../lib/data';
+import { site } from '../site.config';
+
+interface Props { field: string; cat: string; restore?: boolean }
+const { field: fieldId, cat: catId, restore = false } = Astro.props;
+const s = await loadSite();
+const field = s.field(fieldId)!;
+const cat = s.category(catId)!;
+const cats = s.categories.filter((c) => c.field === fieldId);
+const items = s.items.filter((i) => i.cat === catId);
+const fieldPages = s.articles.filter((a) => a.field === fieldId);
+const dates = s.fields.map((f) => f.asof.toISOString().slice(0, 10)).sort();
+const asof = dates[0] === dates[dates.length - 1] ? dates[0] : `${dates[0]}〜${dates[dates.length - 1].slice(5)}`;
+const count = (pred: (i: (typeof s.items)[number]) => boolean) => s.items.filter(pred).length;
+---
+<StarlightPage frontmatter={{ title: '地図', template: 'splash', tableOfContents: false, head: [{ tag: 'title', content: `地図 ${field.name} › ${cat.name} | ${site.name}` }] }}>
+  <div class="not-content zk" data-map data-field={fieldId} data-cat={catId} data-restore={restore ? '1' : undefined}>
+    <header class="map-head">
+      <p class="eyebrow">{s.fields.length} 分野 · {s.items.length} 項目 · 地図は {asof} 時点</p>
+      <div class="filters" role="group" aria-label="絞り込み">
+        <button type="button" class="filter" data-filter="all" aria-pressed="true">すべて</button>
+        <button type="button" class="filter" data-filter="new" aria-pressed="false">新しい物（{site.newSince}〜）</button>
+      </div>
+    </header>
+
+    <div class="tabs">
+      {s.fields.map((f) => (
+        <a class="tab" href={mapHref(f.id)} aria-current={f.id === fieldId ? 'page' : undefined}>
+          {f.name}<span class="mono">{count((i) => i.field === f.id)}</span>
+        </a>
+      ))}
+    </div>
+
+    <div class="map-body">
+      <nav class="cats" aria-label="分類">
+        {cats.map((c) => (
+          <a class="cat" href={mapHref(fieldId, c.id)} aria-current={c.id === catId ? 'page' : undefined}>
+            <span>{c.name}</span>
+            <span class="mono" data-count-all={count((i) => i.cat === c.id)} data-count-new={count((i) => i.cat === c.id && isNew(i))}>
+              {count((i) => i.cat === c.id)}
+            </span>
+          </a>
+        ))}
+      </nav>
+
+      <main class="items">
+        <div class="cat-head">
+          <h2>{cat.name}</h2>
+          {cat.sub && <p class="sub">{cat.sub}</p>}
+          {field.note && <p class="sub">{field.note}</p>}
+        </div>
+        <ul class="item-list">
+          {items.map((it) => {
+            const own = it.pages.includes(it.id) ? s.article(it.id) : undefined;
+            const others = it.pages.filter((p) => p !== it.id);
+            return (
+              <li class="item" id={`item-${it.id}`} data-new={isNew(it) ? '1' : undefined}>
+                <div class="item-main">
+                  <div class="item-top">
+                    <span class="mono">{it.id}</span>
+                    <h3>{it.name}</h3>
+                    {it.basic && <span class="chip chip-basic">基礎</span>}
+                    {it.new !== null && <span class="chip chip-new" title={it.sources.join(' / ') || undefined}>新 {it.new}</span>}
+                  </div>
+                  <p class="desc">{it.desc}</p>
+                  <MiniLinks label="使う数学" ids={it.math} />
+                  <MiniLinks label="ページ" ids={others} />
+                </div>
+                <div class="item-act">
+                  {own && (
+                    <>
+                      <a class="btn btn-primary" href={sheetHref(it.id, 1)}>読む</a>
+                      <span class="act-note">{own.sheets.length} 枚</span>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <p class="empty" data-empty hidden>この分類に {site.newSince} 年以降の新しい物は無い。</p>
+      </main>
+
+      <aside class="side">
+        <section class="panel">
+          <div class="panel-head"><h2>この分野のページ</h2><span class="mono">{fieldPages.length}</span></div>
+          {fieldPages.length ? (
+            <ul class="page-list">
+              {fieldPages.map((a) => (
+                <li><a href={sheetHref(a.id, 1)}><span class="mono">{a.id}</span><span>{a.title}</span></a></li>
+              ))}
+            </ul>
+          ) : (
+            <p class="muted">まだ無い。</p>
+          )}
+        </section>
+      </aside>
+    </div>
+  </div>
+</StarlightPage>
+
+<script>
+  // 保存に失敗しても画面は動かす
+  const KEY = 'zk.';
+  const load = <T,>(k: string, d: T): T => {
+    try {
+      const v = localStorage.getItem(KEY + k);
+      return v ? (JSON.parse(v) as T) : d;
+    } catch {
+      return d;
+    }
+  };
+  const save = (k: string, v: unknown) => {
+    try {
+      localStorage.setItem(KEY + k, JSON.stringify(v));
+    } catch {}
+  };
+
+  const root = document.querySelector<HTMLElement>('[data-map]')!;
+  const here = { field: root.dataset.field!, cat: root.dataset.cat! };
+
+  // 1. 最後に見た分類: トップ (/) では前回の分類へ移る。それ以外では今の分類を覚える
+  const last = load<{ field: string; cat: string } | null>('map', null);
+  if (root.dataset.restore && last && (last.field !== here.field || last.cat !== here.cat)) {
+    location.replace(`/map/${last.field}/${last.cat}/${location.hash}`);
+  } else {
+    save('map', here);
+  }
+
+  // 2. 項目 ID で来た時 (#item-D-01) はカードを強調して中央へ
+  const focus = location.hash.startsWith('#item-') && document.getElementById(location.hash.slice(1));
+  if (focus) {
+    focus.classList.add('is-focus');
+    focus.scrollIntoView({ block: 'center' });
+  }
+
+  // 3. 絞り込み
+  const applyFilter = (f: string) => {
+    for (const b of document.querySelectorAll<HTMLElement>('[data-filter]')) b.setAttribute('aria-pressed', String(b.dataset.filter === f));
+    let shown = 0;
+    for (const li of document.querySelectorAll<HTMLElement>('.item')) {
+      li.hidden = f === 'new' && !li.dataset.new;
+      if (!li.hidden) shown++;
+    }
+    for (const c of document.querySelectorAll<HTMLElement>('[data-count-all]')) c.textContent = (f === 'new' ? c.dataset.countNew : c.dataset.countAll)!;
+    document.querySelector<HTMLElement>('[data-empty]')!.hidden = shown > 0;
+    save('filter', f);
+  };
+  applyFilter(load('filter', 'all'));
+  for (const b of document.querySelectorAll<HTMLElement>('[data-filter]')) b.addEventListener('click', () => applyFilter(b.dataset.filter!));
+</script>

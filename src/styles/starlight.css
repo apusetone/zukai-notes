@@ -1,0 +1,49 @@
+/* Starlight との継ぎ目 */
+
+:root[data-theme='light'] {
+  --sl-font: var(--sans);
+  --sl-font-mono: var(--mono);
+  --sl-color-accent-low: var(--blue-soft);
+  --sl-color-accent: var(--blue);
+  --sl-color-accent-high: var(--blue-dark);
+  --sl-color-white: var(--ink);
+  --sl-color-gray-1: var(--ink2);
+  --sl-color-gray-2: var(--ink2);
+  --sl-color-gray-3: var(--muted);
+  --sl-color-bg: var(--bg);
+  --sl-color-bg-nav: var(--card);
+  --sl-color-bg-sidebar: var(--bg);
+  --sl-color-hairline: var(--line);
+  --sl-color-hairline-light: var(--line2);
+  --sl-content-width: 60rem;
+}
+
+/* 地図とリンクの画面 (splash) は最大 1360px まで広げる */
+main:has(.zk[data-map]) .sl-container,
+main:has(.hub-groups) .sl-container { max-width: 1360px; }
+
+/* 本文の .zk は Starlight の Markdown 用の余白を受けないので、h1 との間だけ空ける */
+.zk { margin-top: 1rem; }
+
+/* .tab / .cat はボタンの aria-pressed / aria-current="true" で当てている。ここではリンクなので "page" にも当てる */
+.tab { text-decoration: none; }
+.tab[aria-current='page'] { color: var(--ink); font-weight: 700; border-bottom-color: var(--blue); }
+.cat { text-decoration: none; }
+.cat[aria-current='page'] { background: var(--blue-soft); color: var(--blue-dark); font-weight: 700; }
+.item:target { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
+
+/* ヘッダーの行き先は Starlight のヘッダーの中なので、下の余白の打ち消しを外す */
+.topnav { margin-bottom: 0; }
+
+/* シートの目次: 広い画面では Starlight のサイドバーに任せ、狭い画面 (サイドバーが隠れる 50rem 未満) だけ横の 1 行で出す */
+.sheets-narrow { position: static; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap: 4px; padding-bottom: 4px; }
+.sheets-narrow .sheet-link { flex: 0 0 auto; min-height: 40px; padding: 6px 10px; white-space: nowrap; }
+.sheets-narrow .sheet-link.in-group { padding-left: 10px; }
+@media (min-width: 50rem) { .sheets-narrow { display: none; } }
+
+/* ページ送りは「地図に戻る」も同じ見た目 */
+.pagination-links { margin-top: 1.5rem; }
+
+/* .sheets / .sheet-box は横並び (row) の中の flex-basis で幅を決めている。
+   ここでは .zk が縦並び (column) なので、flex-basis が高さになってしまう。直下の子は伸ばさない */
+.zk > * { flex: 0 0 auto; }

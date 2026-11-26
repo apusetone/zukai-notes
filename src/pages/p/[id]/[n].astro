@@ -1,0 +1,110 @@
+---
+/**
+ * 記事の n 枚目。シートごとに静的なページを作る。
+ * シートの目次は Starlight のサイドバー、前へ / 次へは Starlight のページ送りを使う。
+ * 狭い画面ではサイドバーがメニューに隠れるので、本文の上に横スクロールの目次も出す。
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import MiniLinks from '../../../components/MiniLinks.astro';
+import Quiz from '../../../components/Quiz.astro';
+import { loadSite, mapHref, sheetHref, sourceUrl, type Article } from '../../../lib/data';
+import { site } from '../../../site.config';
+
+export async function getStaticPaths() {
+  const s = await loadSite();
+  return s.articles.flatMap((a) => a.sheets.map((_, i) => ({ params: { id: a.id, n: String(i + 1) }, props: { article: a } })));
+}
+
+const { article } = Astro.props as { article: Article };
+const n = Number(Astro.params.n);
+const total = article.sheets.length;
+const sheet = article.sheets[n - 1];
+const s = await loadSite();
+const item = s.item(article.item)!;
+const field = s.field(item.field)!;
+const cat = s.category(item.cat)!;
+
+// group の中で何番目か (本文の上の「導出・証明（2）」)
+const inGroup = sheet.group ? article.sheets.slice(0, n).filter((x) => x.group === sheet.group).length : 0;
+const eyebrow = [sheet.group && `${sheet.group}（${inGroup}）`, `${n} / ${total}`].filter(Boolean).join(' · ');
+
+// サイドバー: 続く同じ group をまとめる
+type Entry = { label: string; link: string } | { label: string; items: { label: string; link: string }[] };
+const sidebar: Entry[] = [];
+article.sheets.forEach((x, i) => {
+  const link = { label: `${i + 1} ${x.title}`, link: sheetHref(article.id, i + 1) };
+  const last = sidebar[sidebar.length - 1];
+  if (!x.group) sidebar.push(link);
+  else if (last && 'items' in last && last.label === x.group && article.sheets[i - 1]?.group === x.group) last.items.push(link);
+  else sidebar.push({ label: x.group, items: [link] });
+});
+
+const prev = n > 1 ? { link: sheetHref(article.id, n - 1), label: article.sheets[n - 2].title } : false;
+const next = n < total ? { link: sheetHref(article.id, n + 1), label: article.sheets[n].title } : { link: `${mapHref(field.id, cat.id)}#item-${item.id}`, label: '地図に戻る' };
+const src = sourceUrl(article.source);
+const checkSrc = article.checked && sourceUrl(article.checked.script);
+const parent = article.id !== article.item ? [article.item] : [];
+---
+<StarlightPage
+  frontmatter={{
+    title: article.title,
+    tableOfContents: false,
+    prev,
+    next,
+    head: [{ tag: 'title', content: `${article.id} ${sheet.title} | ${site.name}` }],
+  }}
+  sidebar={sidebar}
+>
+  <div class="not-content zk">
+    <nav class="crumbs" aria-label="現在地">
+      <a href="/">{site.name}</a><span>›</span><a href={mapHref(field.id)}>{field.name}</a><span>›</span><a href={`${mapHref(field.id, cat.id)}#item-${item.id}`}>{cat.name}</a>
+    </nav>
+    <header class="page-head">
+      <div class="item-top">
+        <span class="mono">{article.id}</span>
+        {item.basic && <span class="chip chip-basic">基礎</span>}
+        {item.new !== null && <span class="chip chip-new">新 {item.new}</span>}
+        {article.checked && (checkSrc
+          ? <a class="chip chip-check" href={checkSrc} rel="noopener">検算済み {article.checked.date.toISOString().slice(0, 10)}</a>
+          : <span class="chip chip-check">検算済み {article.checked.date.toISOString().slice(0, 10)}</span>)}
+        {src && <a class="src-link" href={src} rel="noopener">元のファイル</a>}
+      </div>
+      <MiniLinks label="親の項目" ids={parent} />
+      <MiniLinks label="前提" ids={article.prereq} />
+      <MiniLinks label="使う数学" ids={article.math} />
+    </header>
+
+    <nav class="sheets sheets-narrow" aria-label="シート">
+      {article.sheets.map((x, i) => (
+        <a class:list={['sheet-link', { 'in-group': x.group }]} href={sheetHref(article.id, i + 1)} aria-current={i + 1 === n ? 'page' : undefined}>
+          <span class="mono">{i + 1}</span>{x.title}
+        </a>
+      ))}
+    </nav>
+
+    <section class="sheet-box" data-pagefind-body>
+      <p class="eyebrow">{eyebrow}</p>
+      <h2>{sheet.title}</h2>
+      <div class="sheet" set:html={sheet.html} />
+      {sheet.quiz.length > 0 && <Quiz quiz={sheet.quiz} />}
+    </section>
+  </div>
+</StarlightPage>
+
+<script>
+  // 狭い画面の横の目次で、今のシートを見える所へ
+  document.querySelector('.sheets-narrow [aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+
+  // ← → で前後のシートへ。入力中と修飾キーがある時は何もしない
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const t = e.target as HTMLElement;
+    if (t.closest('input, textarea, select, [contenteditable]')) return;
+    const rel = e.key === 'ArrowLeft' ? 'prev' : e.key === 'ArrowRight' ? 'next' : null;
+    const a = rel && document.querySelector<HTMLAnchorElement>(`.pagination-links a[rel="${rel}"]`);
+    if (a) {
+      e.preventDefault();
+      location.href = a.href;
+    }
+  });
+</script>

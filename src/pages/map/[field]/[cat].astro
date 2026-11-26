@@ -1,0 +1,11 @@
+---
+// /map/<分野>/<分類>/ 。項目は /map/<分野>/<分類>/#item-<項目ID> で強調する
+import MapView from '../../../components/MapView.astro';
+import { loadSite } from '../../../lib/data';
+export async function getStaticPaths() {
+  const s = await loadSite();
+  return s.categories.map((c) => ({ params: { field: c.field, cat: c.id } }));
+}
+const { field, cat } = Astro.params;
+---
+<MapView field={field} cat={cat} />

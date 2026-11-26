@@ -1,0 +1,13 @@
+---
+// 「前提」「使う数学」などのミニリンクの行。記事があれば記事へ、無ければ地図のカードへ
+import { loadSite } from '../lib/data';
+interface Props { label: string; ids: string[] }
+const { label, ids } = Astro.props;
+const s = await loadSite();
+---
+{ids.length > 0 && (
+  <p class="links">
+    <span class="links-label">{label}</span>
+    {ids.map((id) => <a class="mini" href={s.href(id)} title={s.item(id)?.name}>{id}</a>)}
+  </p>
+)}

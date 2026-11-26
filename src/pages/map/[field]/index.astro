@@ -1,0 +1,15 @@
+---
+// /map/<分野>/ = その分野の先頭の分類
+import MapView from '../../../components/MapView.astro';
+import { loadSite } from '../../../lib/data';
+export async function getStaticPaths() {
+  const s = await loadSite();
+  return s.fields.map((f) => {
+    const cat = s.categories.find((c) => c.field === f.id);
+    if (!cat) throw new Error(`分野 ${f.id} に分類が無い`);
+    return { params: { field: f.id }, props: { cat: cat.id } };
+  });
+}
+const { field } = Astro.params;
+---
+<MapView field={field} cat={Astro.props.cat} />

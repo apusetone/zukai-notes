@@ -1,0 +1,188 @@
+# 項目 (地図のカード)。cat は categories.yaml の id
+# 記事があるかどうかは src/content/articles/ から自動で決まる
+- id: N-01
+  cat: n-flow
+  name: レート制限 (固定窓・スライディング窓・トークンバケット)
+  desc: 一定の時間に受け付ける要求の数に上限を設ける仕組み。窓で数える方式と、トークンを貯めて使う方式がある。
+  basic: false
+- id: N-02
+  cat: n-flow
+  name: 指数バックオフと jitter
+  desc: 失敗した処理をやり直す前の待ち時間を、回ごとに倍に延ばす方法。待ち時間に乱数 (jitter) を混ぜ、やり直しが同時に重ならないようにする。
+  basic: false
+  math: [M-01, M-06]
+- id: N-03
+  cat: n-auth
+  name: HMAC と定数時間比較
+  desc: 秘密の鍵とハッシュ関数で、メッセージの改ざんを見つける符号を作る方法。符号を比べる時は、比べる時間から中身が漏れないようにする。
+  basic: false
+  math: [M-03, M-08]
+- id: N-04
+  cat: n-auth
+  name: 短い共有コードと試行回数制限
+  desc: 数字 6 桁のような短いコードで相手を確かめる方法。試す回数を制限して、当て推量で通る確率を小さく抑える。
+  basic: false
+  math: [M-06]
+- id: N-05
+  cat: n-conc
+  name: SPSC ロックフリーリングバッファ
+  desc: 書き手 1 つと読み手 1 つの間で、ロックを使わずにデータを渡す環状のバッファ。読む位置と書く位置だけで空きと中身を決める。
+  basic: false
+  math: [M-03]
+- id: D-01
+  cat: d-diff
+  name: 最長共通部分列 (LCS) と diff
+  desc: 2 つの列に共通する、順序を保った最も長い部分列。2 つのファイルの差分は、この部分列から求める。
+  basic: false
+  math: [M-04]
+- id: D-02
+  cat: d-code
+  name: QR コードと Reed–Solomon 符号
+  desc: QR コードは、データを 2 次元の白黒の点で表す。Reed–Solomon 符号を足すので、一部が汚れても読める。
+  basic: false
+  math: [M-02]
+- id: D-03
+  cat: d-code
+  name: Intel HEX とチェックサム
+  desc: バイナリのデータを、1 行ずつ 16 進の文字で書く形式。行ごとのチェックサムで、写し間違いを見つける。
+  basic: false
+  math: [M-03]
+- id: D-04
+  cat: d-store
+  name: FAT32 ファイルシステム
+  desc: ファイルの置き場所を、クラスタのつながりの表 (FAT) で管理するファイルシステム。多くの OS と機器が読み書きできる。
+  basic: false
+  math: [M-03]
+- id: D-05
+  cat: d-store
+  name: キー・値型データベースのキー設計とページング
+  desc: キーと値で読み書きするデータベースで、パーティションキーとソートキーをどう決めるか。大きな結果は、続きの位置を渡して少しずつ取り出す。
+  basic: false
+  math: [M-08]
+- id: D-06
+  cat: d-format
+  name: MPEG-2 プログラムストリーム
+  desc: 映像と音声を、パックとパケットに分けて 1 本の流れにまとめる形式。DVD などで使う。
+  basic: false
+- id: D-07
+  cat: d-format
+  name: MP3 のフレームヘッダ
+  desc: MP3 のファイルは、短いフレームの並びでできている。各フレームの先頭のヘッダに、ビットレートや標本化周波数が書いてある。
+  basic: false
+- id: D-08
+  cat: d-format
+  name: USB HID レポートディスクリプタ
+  desc: キーボードやマウスなどの機器が、ホストとやり取りするデータの形を伝えるための記述。各ビットの意味と大きさを、短い項目の並びで表す。
+  basic: false
+  math: [M-03]
+- id: S-01
+  cat: s-audio
+  name: デシベル (dBFS) と無音検出
+  desc: デジタル音声の大きさを、扱える最大の値を 0 とするデシベルで表す。この値がしきい値を下回る時間が続くと、無音と判定する。
+  basic: false
+  math: [M-05]
+- id: S-02
+  cat: s-audio
+  name: ダイナミック音量正規化
+  desc: 音の大きさを短い区間ごとに測り、目標の大きさに近づくように増幅率を変える方法。小さい音は上げ、大きい音は下げる。
+  basic: false
+  math: [M-05]
+- id: S-03
+  cat: s-detect
+  name: ヒステリシスとデバウンス
+  desc: 入力が境目の近くで揺れる時に、判定が何度も切り替わるのを防ぐ方法。オンとオフでしきい値を変えるか、一定の時間続いた変化だけを認める。
+  basic: false
+- id: S-04
+  cat: s-detect
+  name: しきい値と偽陽性・偽陰性
+  desc: 測った値をしきい値で 2 つに分ける時の誤りの種類。しきい値を動かすと、一方の誤りが減り、もう一方が増える。
+  basic: false
+  math: [M-07]
+- id: S-05
+  cat: s-detect
+  name: 画像差分
+  desc: 2 枚の画像の画素ごとの差を取り、変わった所を見つける方法。動きの検出などに使う。
+  basic: false
+  math: [M-07]
+- id: S-06
+  cat: s-pos
+  name: 対数距離パスロスモデル
+  desc: 電波の強さが距離とともに弱まる様子を、距離の対数の一次式で表すモデル。受けた強さから距離を見積もるのに使う。
+  basic: false
+  math: [M-05]
+- id: S-07
+  cat: s-pos
+  name: カルマンフィルタ
+  desc: 誤差のある観測を続けて受け取り、状態の推定値とその不確かさを更新する方法。予測と観測を、分散に応じた重みで混ぜる。
+  basic: false
+  math: [M-09]
+- id: M-01
+  cat: m-algebra
+  name: 等比級数
+  desc: 一定の比で増える、または減る数の和。和を閉じた式で求められる。
+  basic: false
+- id: M-02
+  cat: m-algebra
+  name: 有限体 GF(2^8)
+  desc: 256 個の元を持つ有限体。1 バイトを 1 つの元とみて、足し算・掛け算・割り算ができる。
+  basic: false
+  math: [M-03]
+- id: M-03
+  cat: m-algebra
+  name: 剰余演算とビット演算
+  desc: 割った余りで計算する演算と、2 進数の桁ごとの演算。2 のべき乗で割る余りは、ビットの AND で求められる。
+  basic: false
+- id: M-04
+  cat: m-algo
+  name: 動的計画法
+  desc: 大きな問題を小さな部分問題に分け、部分問題の答えを表に残して使い回す解き方。
+  basic: false
+- id: M-05
+  cat: m-log
+  name: 対数とデシベル
+  desc: 対数は、掛け算を足し算に変える。デシベルは、2 つの量の比を対数で表す単位。
+  basic: false
+- id: M-06
+  cat: m-prob
+  name: 確率と期待値
+  desc: 起こりやすさを 0 から 1 の数で表す。期待値は、値に確率を掛けて足した平均の値。
+  basic: false
+- id: M-07
+  cat: m-prob
+  name: 混同行列と ROC
+  desc: 2 つに分ける判定の結果を、正解と予測の組で数えた表。しきい値を動かした時の誤りの変わり方を、ROC 曲線で表す。
+  basic: false
+  math: [M-06]
+- id: M-08
+  cat: m-prob
+  name: ハッシュ関数と衝突確率
+  desc: 任意のデータから、決まった長さの値を作る関数。異なるデータが同じ値になる確率を、誕生日問題で見積もる。
+  basic: false
+  math: [M-06]
+- id: M-09
+  cat: m-prob
+  name: 正規分布と分散の伝播
+  desc: 平均と分散で決まる、釣鐘の形の分布。誤差を足したり定数倍したりした時に、分散がどう変わるかを計算する。
+  basic: false
+  math: [M-06]
+- id: M-10
+  cat: m-geo
+  name: 最小二乗法と正規方程式
+  desc: 誤差の二乗の和が最小になるように、モデルの係数を決める方法。正規方程式という連立一次方程式を解いて求める。
+  basic: false
+- id: M-11
+  cat: m-geo
+  name: 三辺測量
+  desc: 平面では 3 つ、空間では 4 つ以上の点からの距離をもとに、位置を求める方法。距離に誤差がある時は、最小二乗法で解く。
+  basic: false
+  math: [M-10]
+- id: M-12
+  cat: m-geo
+  name: 線分交差判定
+  desc: 2 本の線分が交わるかどうかを、外積の符号で判定する方法。
+  basic: false
+- id: M-13
+  cat: m-geo
+  name: アスペクト比を保つフィット変換と座標系
+  desc: 縦横の比を保ったまま、図形や画像を枠に収める変換。拡大率と平行移動で、座標系の間を変換する。
+  basic: false
