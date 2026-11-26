@@ -7,7 +7,8 @@
  * - `$…$` `$$…$$` は KaTeX でビルド時に HTML にする。KaTeX のエラーはビルドを止める
  * - `:::quiz[問1]` は確かめるの問い。本文から外して、データとして返す
  *
- * 原稿は自分が書く前提で、HTML の消毒はしない。
+ * 原稿の HTML はそのまま通す。ただし動く物 (script・on* 属性・javascript: の URL など) はエラーにする。
+ * 原稿は外の資料から作ることがあり、そこへ紛れた物をページで動かさないため。
  */
 import type { Root, RootContent, Parent, PhrasingContent, Paragraph, List, Heading } from 'mdast';
 import type { Root as HRoot, Element } from 'hast';
@@ -23,6 +24,7 @@ import rehypeStringify from 'rehype-stringify';
 import { visit, SKIP } from 'unist-util-visit';
 import { toString } from 'mdast-util-to-string';
 import { VFile } from 'vfile';
+import { base, withBase } from './base';
 
 export type QuizOption = { html: string; ok: boolean };
 export type Quiz = { label: string; q: string; opts: QuizOption[]; why: string };
@@ -52,6 +54,7 @@ const parser = unified().use(remarkParse).use(remarkGfm).use(remarkDirective).us
 const toHtml = unified()
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
+  .use(rehypeNoActive)
   .use(rehypeKatex, { output: 'htmlAndMathml' })
   .use(rehypeSpecParts)
   .use(rehypeStringify);
@@ -215,7 +218,41 @@ function mdToHtml(root: Root, where: string, fail: (m: string) => never): string
   const html = toHtml.stringify(hast as any, file) as string;
   const katexError = file.messages.find((m) => m.source === 'rehype-katex');
   if (katexError) fail(`${where}: 数式のエラー: ${katexError.cause ?? katexError.reason}`);
+  const active = file.messages.find((m) => m.source === ACTIVE_SOURCE);
+  if (active) fail(`${where}: ${active.reason}`);
   return html.trim();
+}
+
+/** 原稿に書けない要素。読み込みや実行の口になる */
+const ACTIVE_TAGS = new Set(['script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'base', 'meta', 'link', 'portal']);
+/** URL を取る属性 (SVG のアニメーションで href を書き換える to / values なども)。javascript: を断る */
+const URL_PROPS = new Set(['href', 'xLinkHref', 'src', 'srcSet', 'poster', 'action', 'formAction', 'data', 'cite', 'background', 'ping', 'to', 'from', 'by', 'values']);
+/** そのうち data: も断るもの */
+const LINK_PROPS = new Set(['href', 'xLinkHref', 'action', 'formAction']);
+
+const ACTIVE_SOURCE = 'zk-no-active';
+
+/** 原稿の HTML に動く物があれば印を付ける。mdToHtml がエラーにする。消して通すと書き手が気付かないので止める */
+function rehypeNoActive() {
+  return (tree: HRoot, file: VFile) => {
+    visit(tree, 'element', (node: Element) => {
+      if (ACTIVE_TAGS.has(node.tagName)) {
+        file.message(`<${node.tagName}> は使えない`, { source: ACTIVE_SOURCE });
+      }
+      for (const [prop, value] of Object.entries(node.properties ?? {})) {
+        if (/^on/i.test(prop)) file.message(`<${node.tagName}> の ${prop} は使えない (イベントの属性)`, { source: ACTIVE_SOURCE });
+        if (!URL_PROPS.has(prop)) continue;
+        for (const v of Array.isArray(value) ? value : [value]) {
+          if (typeof v !== 'string') continue;
+          // 空白や制御文字を挟んで書く形もあるので、取り除いてから見る
+          const flat = v.replace(/[\u0000-\u0020]/g, '').toLowerCase();
+          if (/(?:^|[^a-z])(?:javascript|vbscript):/.test(flat) || (LINK_PROPS.has(prop) && flat.startsWith('data:'))) {
+            file.message(`<${node.tagName}> の ${prop} に使えない URL がある`, { source: ACTIVE_SOURCE });
+          }
+        }
+      }
+    });
+  };
 }
 
 /** KaTeX と表の後処理: 別行の数式の枠、句読点と離さない文中の数式、表の横スクロール、出典のリンク */
@@ -249,6 +286,21 @@ function rehypeSpecParts() {
       }
       if (node.tagName === 'a' && /^https?:/.test(String(node.properties.href))) {
         node.properties.rel = ['noopener'];
+      }
+    });
+    // サイトの根からのリンクと画像 (/articles/<ID>/x.png など) に base を付ける。
+    // [[ID]] の参照は付いた URL で来るので、もう付いている物はそのまま
+    visit(tree, 'element', (node: Element) => {
+      const fix = (v: string) => (!v.startsWith('/') || v.startsWith('//') || (base && (v === base || v.startsWith(`${base}/`))) ? v : withBase(v));
+      for (const prop of ['href', 'src', 'poster'] as const) {
+        const v = node.properties[prop];
+        if (typeof v === 'string') node.properties[prop] = fix(v);
+      }
+      // srcset は「URL 幅, URL 幅」の並び
+      const set = node.properties.srcSet;
+      if (Array.isArray(set) || typeof set === 'string') {
+        const items = Array.isArray(set) ? set.map(String) : set.split(',');
+        node.properties.srcSet = items.map((item) => item.trim().replace(/^\S+/, (u) => fix(u))).join(', ');
       }
     });
     // 空の段落 (部品の外しで残るもの) は出さない

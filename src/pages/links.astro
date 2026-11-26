@@ -1,7 +1,7 @@
 ---
 // リンクの画面
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-import { loadSite, mapHref, sheetHref } from '../lib/data';
+import { loadSite, homeHref, mapHref, sheetHref } from '../lib/data';
 const s = await loadSite();
 const foundations = s.articles.filter((a) => a.id.endsWith('-00'));
 const deep = s.articles.filter((a) => !a.id.endsWith('-00'));
@@ -14,7 +14,7 @@ const fieldName = (id: string) => s.field(id)?.name ?? '';
       <section class="panel">
         <div class="panel-head"><h2>読む</h2></div>
         <ul class="hub-list">
-          <li><a class="hub-link" href="/"><span class="hub-name">地図</span><span class="mono">{s.items.length} 項目</span></a></li>
+          <li><a class="hub-link" href={homeHref()}><span class="hub-name">地図</span><span class="mono">{s.items.length} 項目</span></a></li>
           {s.fields.map((f) => (
             <li><a class="hub-link" href={mapHref(f.id)}><span class="hub-name">分野: {f.name}</span><span class="mono">{f.id}</span></a></li>
           ))}

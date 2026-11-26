@@ -7,7 +7,7 @@
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import MiniLinks from '../../../components/MiniLinks.astro';
 import Quiz from '../../../components/Quiz.astro';
-import { loadSite, mapHref, sheetHref, sourceUrl, type Article } from '../../../lib/data';
+import { loadSite, homeHref, mapHref, sheetHref, sheetPath, sourceUrl, type Article } from '../../../lib/data';
 import { site } from '../../../site.config';
 
 export async function getStaticPaths() {
@@ -28,17 +28,18 @@ const cat = s.category(item.cat)!;
 const inGroup = sheet.group ? article.sheets.slice(0, n).filter((x) => x.group === sheet.group).length : 0;
 const eyebrow = [sheet.group && `${sheet.group}（${inGroup}）`, `${n} / ${total}`].filter(Boolean).join(' · ');
 
-// サイドバー: 続く同じ group をまとめる
+// サイドバー: 続く同じ group をまとめる。link は base 無し (Starlight が付ける)
 type Entry = { label: string; link: string } | { label: string; items: { label: string; link: string }[] };
 const sidebar: Entry[] = [];
 article.sheets.forEach((x, i) => {
-  const link = { label: `${i + 1} ${x.title}`, link: sheetHref(article.id, i + 1) };
+  const link = { label: `${i + 1} ${x.title}`, link: sheetPath(article.id, i + 1) };
   const last = sidebar[sidebar.length - 1];
   if (!x.group) sidebar.push(link);
   else if (last && 'items' in last && last.label === x.group && article.sheets[i - 1]?.group === x.group) last.items.push(link);
   else sidebar.push({ label: x.group, items: [link] });
 });
 
+// 前へ / 次へは Starlight が base を付けないので、base 付きの *Href を渡す
 const prev = n > 1 ? { link: sheetHref(article.id, n - 1), label: article.sheets[n - 2].title } : false;
 const next = n < total ? { link: sheetHref(article.id, n + 1), label: article.sheets[n].title } : { link: `${mapHref(field.id, cat.id)}#item-${item.id}`, label: '地図に戻る' };
 const src = sourceUrl(article.source);
@@ -57,7 +58,7 @@ const parent = article.id !== article.item ? [article.item] : [];
 >
   <div class="not-content zk">
     <nav class="crumbs" aria-label="現在地">
-      <a href="/">{site.name}</a><span>›</span><a href={mapHref(field.id)}>{field.name}</a><span>›</span><a href={`${mapHref(field.id, cat.id)}#item-${item.id}`}>{cat.name}</a>
+      <a href={homeHref()}>{site.name}</a><span>›</span><a href={mapHref(field.id)}>{field.name}</a><span>›</span><a href={`${mapHref(field.id, cat.id)}#item-${item.id}`}>{cat.name}</a>
     </nav>
     <header class="page-head">
       <div class="item-top">

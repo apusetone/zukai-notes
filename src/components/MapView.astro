@@ -107,8 +107,11 @@ const count = (pred: (i: (typeof s.items)[number]) => boolean) => s.items.filter
 </StarlightPage>
 
 <script>
-  // 保存に失敗しても画面は動かす
-  const KEY = 'zk.';
+  import { base, withBase } from '../lib/base';
+
+  // 保存に失敗しても画面は動かす。
+  // base ごとにサイトの中身が違い得るので、分けて覚える。base が '/' の時は 'zk.'
+  const KEY = base ? `zk.${base}.` : 'zk.';
   const load = <T,>(k: string, d: T): T => {
     try {
       const v = localStorage.getItem(KEY + k);
@@ -129,7 +132,7 @@ const count = (pred: (i: (typeof s.items)[number]) => boolean) => s.items.filter
   // 1. 最後に見た分類: トップ (/) では前回の分類へ移る。それ以外では今の分類を覚える
   const last = load<{ field: string; cat: string } | null>('map', null);
   if (root.dataset.restore && last && (last.field !== here.field || last.cat !== here.cat)) {
-    location.replace(`/map/${last.field}/${last.cat}/${location.hash}`);
+    location.replace(`${withBase(`/map/${last.field}/${last.cat}/`)}${location.hash}`);
   } else {
     save('map', here);
   }

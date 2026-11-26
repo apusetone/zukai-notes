@@ -1,9 +1,10 @@
 ---
 // ヘッダー右の行き先。Starlight の SocialIcons を差し替える
-const path = Astro.url.pathname;
+import { stripBase, withBase } from '../lib/base';
+const path = stripBase(Astro.url.pathname);
 const links = [
-  { href: '/', label: '地図', current: path === '/' || path.startsWith('/map/') },
-  { href: '/links/', label: 'リンク', current: path.startsWith('/links') },
+  { href: withBase('/'), label: '地図', current: path === '/' || path.startsWith('/map/') },
+  { href: withBase('/links/'), label: 'リンク', current: path.startsWith('/links') },
 ];
 ---
 <nav class="topnav" aria-label="サイト内の行き先">

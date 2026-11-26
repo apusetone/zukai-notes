@@ -3,7 +3,12 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { site } from './src/site.config.ts';
 
+// サイトの根の URL。既定は '/'。別のパスの下に置く時は SITE_BASE で渡す (例: SITE_BASE=/docs/)
+const base = process.env.SITE_BASE || '/';
+if (!base.startsWith('/') || !base.endsWith('/')) throw new Error(`SITE_BASE は '/' で始まり '/' で終える (今は ${base})`);
+
 export default defineConfig({
+  base,
   // 地図の YAML で ID が重複したらビルドを止める
   prerenderConflictBehavior: 'error',
   integrations: [

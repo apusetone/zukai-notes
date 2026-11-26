@@ -8,6 +8,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderArticle, type Sheet } from './render';
 import { site } from '../site.config';
+import { withBase } from './base';
 
 export type Field = { id: string; name: string; asof: Date; basis: string; note: string };
 export type Category = { id: string; field: string; name: string; sub: string };
@@ -142,12 +143,16 @@ function checkVerification(id: string, checked: Article['checked'], errors: stri
 }
 
 function itemHref(id: string, itemById: Map<string, Item>, articleIds: Set<string>) {
-  if (articleIds.has(id)) return `/p/${id}/1/`;
+  if (articleIds.has(id)) return sheetHref(id, 1);
   const it = itemById.get(id)!;
-  return `/map/${it.field}/${it.cat}/#item-${id}`;
+  return `${mapHref(it.field, it.cat)}#item-${id}`;
 }
 
-export const sheetHref = (articleId: string, n: number) => `/p/${articleId}/${n}/`;
-export const mapHref = (field: string, cat?: string) => (cat ? `/map/${field}/${cat}/` : `/map/${field}/`);
+/** シートのパス。base を付けない。Starlight のサイドバーは自分で base を付けるので、こちらを渡す */
+export const sheetPath = (articleId: string, n: number) => `/p/${articleId}/${n}/`;
+/** 以下の *Href は base を付けた、そのまま href に書ける URL */
+export const sheetHref = (articleId: string, n: number) => withBase(sheetPath(articleId, n));
+export const mapHref = (field: string, cat?: string) => withBase(cat ? `/map/${field}/${cat}/` : `/map/${field}/`);
+export const homeHref = () => withBase('/');
 export const sourceUrl = (path: string) => (site.sourceBaseUrl ? `${site.sourceBaseUrl}/${path}` : null);
 export const isNew = (it: Item) => it.new !== null && it.new >= site.newSince;
